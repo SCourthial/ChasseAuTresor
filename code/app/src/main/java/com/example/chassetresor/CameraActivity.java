@@ -1,32 +1,21 @@
 package com.example.chassetresor;
 
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.app.Activity;
-import android.app.ActivityManager;
 import android.content.Context;
-import android.net.Uri;
-import android.os.Build;
+import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.MotionEvent;
+import android.view.View;
 import android.widget.Toast;
 
-import com.google.ar.core.Anchor;
-import com.google.ar.core.HitResult;
-import com.google.ar.core.Plane;
-import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.Color;
 import com.google.ar.sceneform.rendering.MaterialFactory;
 import com.google.ar.sceneform.rendering.ModelRenderable;
-import com.google.ar.sceneform.rendering.Renderable;
 import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.ux.ArFragment;
-import com.google.ar.sceneform.ux.TransformableNode;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -43,7 +32,7 @@ public class CameraActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_camera);
 
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
         ArSceneView arSceneView = arFragment.getArSceneView();
@@ -131,5 +120,11 @@ public class CameraActivity extends AppCompatActivity {
                     .show();
         });
         return hint;
+    }
+
+    public void cameraButtonClicked(View view) {
+        Intent intent = new Intent(getBaseContext(), MapActivity.class);
+        //intent.putExtra("EXTRA_SESSION_ID", sessionId);
+        startActivity(intent);
     }
 }
