@@ -34,7 +34,7 @@ import java.util.concurrent.ExecutionException;
 import uk.co.appoly.arcorelocation.LocationMarker;
 import uk.co.appoly.arcorelocation.LocationScene;
 
-public class MainActivity extends AppCompatActivity {
+public class CameraActivity extends AppCompatActivity {
 
     private ArFragment arFragment;
     private LocationScene locationScene;
