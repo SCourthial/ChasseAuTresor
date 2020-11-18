@@ -15,11 +15,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
@@ -30,13 +25,15 @@ import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.ux.ArFragment;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import uk.co.appoly.arcorelocation.LocationMarker;
 import uk.co.appoly.arcorelocation.LocationScene;
+import uk.co.appoly.arcorelocation.utils.ARLocationPermissionHelper;
+
+import static java.lang.Math.abs;
 
 public class CameraActivity extends AppCompatActivity implements LocationListener {
 
@@ -44,11 +41,13 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
     private ArSceneView arSceneView;
     private LocationScene locationScene;
     private ModelRenderable redCubeRenderable, andyRenderable;
+    private LocationMarker myHint;
 
-    private double latitude;
-    private double longitude;
-    private double altitude;
-    private boolean firstTime;
+    private double latitude, newLatitude;
+    private double longitude, newLongitude;
+    private double altitude, newAltitude;
+    private boolean firstTime, catsCreated = false;
+    private boolean hasFinishedLoading = false;
 
     //Request code associé à la demande de permission de localisation:
     private static final int PERMS_CALL_ID = 1234; //Pour chaque demande d'activation de permission il faut un identifiant qui est unique.
@@ -83,6 +82,7 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
 
                             try {
                                 andyRenderable = andy.get();
+                                hasFinishedLoading = true;
                             } catch (InterruptedException | ExecutionException ex) {
                             }
                             return null;
@@ -115,14 +115,61 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
 
          */
 
-        LocationMarker catLocationMarker = new LocationMarker(
-                longitude,
-                latitude,
-                getHint());
-        catLocationMarker.setHeight((float) altitude);
-        catLocationMarker.setScaleModifier(1);
+        arSceneView
+                .getScene()
+                .addOnUpdateListener(
+                        frameTime -> {
+                            if (!hasFinishedLoading) {
+                                return;
+                            }
 
-        addHint(catLocationMarker);
+                            if (locationScene == null) {
+                                locationScene = new LocationScene(this, arSceneView);
+                                locationScene.setRefreshAnchorsAsLocationChanges(true);
+
+                                for (int i = 0; i < 1; i++) {
+                                    LocationMarker hint = new LocationMarker(
+                                            4.917981,
+                                            45.004812,
+                                            getHint(i));
+                                    hint.setScaleModifier(0.1f);
+                                    hint.setScalingMode(LocationMarker.ScalingMode.GRADUAL_TO_MAX_RENDER_DISTANCE);
+                                    hint.setHeight(0f);
+
+                                    locationScene.mLocationMarkers.add(hint);
+                                }
+                            }
+
+                            if (locationScene != null) {
+                                locationScene.processFrame(arSceneView.getArFrame());
+                            }
+                        });
+    }
+
+    private void addHints(ArrayList<LocationMarker> hintLocationMarkers) {
+        arSceneView
+                .getScene()
+                .addOnUpdateListener(
+                        frameTime -> {
+                            if (!hasFinishedLoading) {
+                                return;
+                            }
+
+                            if (locationScene == null) {
+                                locationScene = new LocationScene(this, arSceneView);
+
+                                Iterator<LocationMarker> it = hintLocationMarkers.iterator();
+                                LocationMarker hintLocationMarker;
+                                while(it.hasNext()){
+                                    hintLocationMarker = it.next();
+                                    locationScene.mLocationMarkers.add(hintLocationMarker);
+                                }
+                            }
+
+                            if (locationScene != null) {
+                                locationScene.processFrame(arSceneView.getArFrame());
+                            }
+                        });
 
     }
 
@@ -134,6 +181,7 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
 
                             if (locationScene == null) {
                                 locationScene = new LocationScene(this, arSceneView);
+
                                 locationScene.mLocationMarkers.add(hintLocationMarker);
                             }
 
@@ -143,16 +191,27 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
                         });
     }
 
-    private Node getHint() {
+    private Node getHint(int i) {
         Node hint = new Node();
         hint.setRenderable(andyRenderable);
         Context c = this;
         hint.setOnTapListener((v, event) -> {
             Toast.makeText(
-                    c, "Hint touched.", Toast.LENGTH_LONG)
+                    c, "Hint "+ i + " touched.", Toast.LENGTH_LONG)
                     .show();
         });
         return hint;
+    }
+
+    private LocationMarker createHint(double longitude, double latitude, double altitude){
+        LocationMarker hintLocationMarker = new LocationMarker(
+                longitude,
+                latitude,
+                getHint(0));
+        hintLocationMarker.setHeight((float) altitude);
+        hintLocationMarker.setScaleModifier(1);
+
+        return hintLocationMarker;
     }
 
     public void cameraButtonClicked(View view) {
@@ -168,6 +227,10 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
     protected void onResume() {//onResume : start ou reprend une activité
         super.onResume();
         checkPermission();//Il faut checker les permission et s'abonner
+
+        if (locationScene != null) {
+            locationScene.resume();
+        }
     }
 
     private void checkPermission(){
@@ -228,20 +291,32 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
     @Override
     public void onLocationChanged(@NonNull Location location) //C'est appelé 10 fois toute les 30 secondes.
     {
-        latitude=location.getLatitude();
-        longitude=location.getLongitude();
-        altitude=location.getAltitude();
+        newLongitude=location.getLongitude();
+        newLatitude=location.getLatitude();
+        newAltitude=location.getAltitude();
+
+        /*if (!catsCreated) {
+            if (abs(longitude - newLongitude) < 0.00001 && abs(latitude - newLatitude) < 0.00001) {
+                ArrayList<LocationMarker> catList = new ArrayList<LocationMarker>();
+                for (int i = -5; i < 5; i++) {
+                    catList.add(createHint(longitude + i * 0.01, latitude + i* 0.01, altitude - 10));
+                }
+
+                addHints(catList);
+
+                Toast.makeText(this, "Hint créés!", Toast.LENGTH_LONG).show();
+
+                catsCreated = true;
+            } else {
+                Toast.makeText(this, "Ne bougez pas trop", Toast.LENGTH_LONG).show();
+            }
+        }*/
+
+        longitude=newLongitude;
+        latitude=newLatitude;
+        altitude=newAltitude;
 
         //Toast.makeText(this, "Altitude" + altitude + "Longitude" + longitude + "latitude" + latitude, Toast.LENGTH_LONG).show();
-
-        LocationMarker catLocationMarker = new LocationMarker(
-                longitude,
-                latitude,
-                getHint());
-        catLocationMarker.setHeight((float) altitude);
-        catLocationMarker.setScaleModifier(10);
-
-        addHint(catLocationMarker);
     }
 
 
