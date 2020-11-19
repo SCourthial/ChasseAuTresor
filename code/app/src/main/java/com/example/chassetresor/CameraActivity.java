@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.model.LatLng;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
@@ -26,14 +27,12 @@ import com.google.ar.sceneform.ux.ArFragment;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import uk.co.appoly.arcorelocation.LocationMarker;
 import uk.co.appoly.arcorelocation.LocationScene;
-import uk.co.appoly.arcorelocation.utils.ARLocationPermissionHelper;
-
-import static java.lang.Math.abs;
 
 public class CameraActivity extends AppCompatActivity implements LocationListener {
 
@@ -49,6 +48,9 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
     private boolean firstTime, catsCreated = false;
     private boolean hasFinishedLoading = false;
 
+    private double[] hintList;
+    private boolean[] hintTouched;
+
     //Request code associé à la demande de permission de localisation:
     private static final int PERMS_CALL_ID = 1234; //Pour chaque demande d'activation de permission il faut un identifiant qui est unique.
     //Service de la plateforme android.
@@ -58,6 +60,14 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
+
+        Intent intent = getIntent();
+        if (intent != null) {
+            if (intent.hasExtra("HINT_LIST")){ // vérifie qu'une valeur est associée à la clé “edittext”
+                hintList = intent.getDoubleArrayExtra("HINT_LIST"); // on récupère la valeur associée à la clé
+                hintTouched = new boolean[(int) hintList.length/2];
+            }
+        }
 
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
         arSceneView = arFragment.getArSceneView();
@@ -127,10 +137,10 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
                                 locationScene = new LocationScene(this, arSceneView);
                                 locationScene.setRefreshAnchorsAsLocationChanges(true);
 
-                                for (int i = 0; i < 1; i++) {
+                                for (int i = 0; i < hintList.length / 2; i++) {
                                     LocationMarker hint = new LocationMarker(
-                                            4.917981,
-                                            45.004812,
+                                            hintList[2*i],
+                                            hintList[2*i+1],
                                             getHint(i));
                                     hint.setScaleModifier(0.1f);
                                     hint.setScalingMode(LocationMarker.ScalingMode.GRADUAL_TO_MAX_RENDER_DISTANCE);
@@ -138,51 +148,6 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
 
                                     locationScene.mLocationMarkers.add(hint);
                                 }
-                            }
-
-                            if (locationScene != null) {
-                                locationScene.processFrame(arSceneView.getArFrame());
-                            }
-                        });
-    }
-
-    private void addHints(ArrayList<LocationMarker> hintLocationMarkers) {
-        arSceneView
-                .getScene()
-                .addOnUpdateListener(
-                        frameTime -> {
-                            if (!hasFinishedLoading) {
-                                return;
-                            }
-
-                            if (locationScene == null) {
-                                locationScene = new LocationScene(this, arSceneView);
-
-                                Iterator<LocationMarker> it = hintLocationMarkers.iterator();
-                                LocationMarker hintLocationMarker;
-                                while(it.hasNext()){
-                                    hintLocationMarker = it.next();
-                                    locationScene.mLocationMarkers.add(hintLocationMarker);
-                                }
-                            }
-
-                            if (locationScene != null) {
-                                locationScene.processFrame(arSceneView.getArFrame());
-                            }
-                        });
-
-    }
-
-    private void addHint(LocationMarker hintLocationMarker) {
-        arSceneView
-                .getScene()
-                .addOnUpdateListener(
-                        frameTime -> {
-
-                            if (locationScene == null) {
-                                locationScene = new LocationScene(this, arSceneView);
-
-                                locationScene.mLocationMarkers.add(hintLocationMarker);
                             }
 
                             if (locationScene != null) {
@@ -199,24 +164,14 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
             Toast.makeText(
                     c, "Hint "+ i + " touched.", Toast.LENGTH_LONG)
                     .show();
+            hintTouched[i] = true;
         });
         return hint;
     }
 
-    private LocationMarker createHint(double longitude, double latitude, double altitude){
-        LocationMarker hintLocationMarker = new LocationMarker(
-                longitude,
-                latitude,
-                getHint(0));
-        hintLocationMarker.setHeight((float) altitude);
-        hintLocationMarker.setScaleModifier(1);
-
-        return hintLocationMarker;
-    }
-
     public void cameraButtonClicked(View view) {
         Intent intent = new Intent(getBaseContext(), MapActivity.class);
-        //intent.putExtra("EXTRA_SESSION_ID", sessionId);
+        intent.putExtra("HINT_TOUCHED", hintTouched);
         startActivity(intent);
     }
 
@@ -291,11 +246,11 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
     @Override
     public void onLocationChanged(@NonNull Location location) //C'est appelé 10 fois toute les 30 secondes.
     {
-        newLongitude=location.getLongitude();
+        /*newLongitude=location.getLongitude();
         newLatitude=location.getLatitude();
         newAltitude=location.getAltitude();
 
-        /*if (!catsCreated) {
+        if (!catsCreated) {
             if (abs(longitude - newLongitude) < 0.00001 && abs(latitude - newLatitude) < 0.00001) {
                 ArrayList<LocationMarker> catList = new ArrayList<LocationMarker>();
                 for (int i = -5; i < 5; i++) {
@@ -310,11 +265,11 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
             } else {
                 Toast.makeText(this, "Ne bougez pas trop", Toast.LENGTH_LONG).show();
             }
-        }*/
+        }
 
         longitude=newLongitude;
         latitude=newLatitude;
-        altitude=newAltitude;
+        altitude=newAltitude;*/
 
         //Toast.makeText(this, "Altitude" + altitude + "Longitude" + longitude + "latitude" + latitude, Toast.LENGTH_LONG).show();
     }
@@ -334,4 +289,60 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
     public void onProviderDisabled(@NonNull String provider) {
 
     }
+
+    /*private void addHints(ArrayList<LocationMarker> hintLocationMarkers) {
+        arSceneView
+                .getScene()
+                .addOnUpdateListener(
+                        frameTime -> {
+                            if (!hasFinishedLoading) {
+                                return;
+                            }
+
+                            if (locationScene == null) {
+                                locationScene = new LocationScene(this, arSceneView);
+
+                                Iterator<LocationMarker> it = hintLocationMarkers.iterator();
+                                LocationMarker hintLocationMarker;
+                                while(it.hasNext()){
+                                    hintLocationMarker = it.next();
+                                    locationScene.mLocationMarkers.add(hintLocationMarker);
+                                }
+                            }
+
+                            if (locationScene != null) {
+                                locationScene.processFrame(arSceneView.getArFrame());
+                            }
+                        });
+
+    }*/
+
+    /*private void addHint(LocationMarker hintLocationMarker) {
+        arSceneView
+                .getScene()
+                .addOnUpdateListener(
+                        frameTime -> {
+
+                            if (locationScene == null) {
+                                locationScene = new LocationScene(this, arSceneView);
+
+                                locationScene.mLocationMarkers.add(hintLocationMarker);
+                            }
+
+                            if (locationScene != null) {
+                                locationScene.processFrame(arSceneView.getArFrame());
+                            }
+                        });
+    }*/
+
+    /*private LocationMarker createHint(int id, double longitude, double latitude, double altitude){
+        LocationMarker hintLocationMarker = new LocationMarker(
+                longitude,
+                latitude,
+                getHint(id));
+        hintLocationMarker.setHeight((float) altitude);
+        hintLocationMarker.setScaleModifier(1);
+
+        return hintLocationMarker;
+    }*/
 }
