@@ -60,11 +60,11 @@ public class MapActivity extends AppCompatActivity implements LocationListener {
         mapFragment = (MapFragment) fragmentManager.findFragmentById(R.id.map);
 
         indicesArray = new ArrayList<LatLng>();
-        indicesArray.add(new LatLng(45.004812, 4.917981));
+        indicesArray.add(new LatLng(45.005031, 4.918539));
 
         hintList = new double[2];
-        hintList[0] = 4.917981;
-        hintList[1] = 45.004812;
+        hintList[0] = 4.918539;
+        hintList[1] = 45.005031;
 
         hintTouched = new boolean[(int) hintList.length/2];
     }
@@ -235,7 +235,7 @@ public class MapActivity extends AppCompatActivity implements LocationListener {
     @SuppressLint("MissingPermission")
     public void makeItVibrate(LatLng nearestPoint, LatLng googleLocation){
         if (nearestPoint != null) {
-            if (distanceBetween(nearestPoint.latitude, googleLocation.latitude, nearestPoint.longitude, googleLocation.longitude, 0, 0) < 50) {
+            if (distanceBetween(nearestPoint.latitude, googleLocation.latitude, nearestPoint.longitude, googleLocation.longitude, 0, 0) < 20) {
                 Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 // Vibrate for 500 milliseconds
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
