@@ -18,6 +18,7 @@ import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.view.View;
+import android.widget.Button;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -52,12 +53,16 @@ public class MapActivity extends AppCompatActivity implements LocationListener {
 
     private final static double MAX_RADIUS = 100; //En mètre
 
+    private Button dashboardButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
         FragmentManager fragmentManager = getFragmentManager();
         mapFragment = (MapFragment) fragmentManager.findFragmentById(R.id.map);
+
+        dashboardButton = findViewById(R.id.goToDashboard);
 
         indicesArray = new ArrayList<LatLng>();
         indicesArray.add(new LatLng(45.005031, 4.918539));
@@ -344,5 +349,10 @@ public class MapActivity extends AppCompatActivity implements LocationListener {
             return pointList.get(indexOfNearestPointToCentre);
         }
         return null;
+    }
+
+    public void clickOnDashboardButton(View view) {
+        Intent myIntent = new Intent(MapActivity.this, DashBoardActivity.class);
+        MapActivity.this.startActivity(myIntent);
     }
 }

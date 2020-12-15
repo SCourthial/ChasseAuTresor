@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">ChasseTresor</string>
+    <string-array name="player_login">
+        <item>Otba</item>
+        <item>Aleck</item>
+        <item>Sebastian</item>
+        <item>Samuel</item>
+    </string-array>
+
+    <string-array name="description">
+        <item>This is a random description</item>
+        <item>This is a random description</item>
+        <item>This is a random description</item>
+        <item>This is a random description</item>
+    </string-array>
+
+
 </resources>
