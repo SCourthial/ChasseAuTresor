@@ -25,6 +25,7 @@ public class DashBoardActivity extends AppCompatActivity {
     ServiceConnection onService;
 
     int numberOfIndices;
+    boolean firstTime = true;
 
     RecyclerView recyclerView;
 
@@ -48,7 +49,10 @@ public class DashBoardActivity extends AppCompatActivity {
                     images.add(R.drawable.player_image);
                 }
 
-                createDashboard(wsService.getPlayerNames(),wsService.getPlayerProgression(),numberOfIndices);
+                if (firstTime) {
+                    createDashboard(wsService.getPlayerNames(), wsService.getPlayerProgression(), numberOfIndices);
+                    firstTime = false;
+                }
             }
 
             @Override
