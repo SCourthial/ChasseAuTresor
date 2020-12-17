@@ -5,13 +5,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
@@ -35,6 +39,9 @@ import uk.co.appoly.arcorelocation.LocationMarker;
 import uk.co.appoly.arcorelocation.LocationScene;
 
 public class CameraActivity extends AppCompatActivity implements LocationListener {
+
+    WebSocketService wsService;
+    ServiceConnection onService;
 
     private ArFragment arFragment;
     private ArSceneView arSceneView;
@@ -60,6 +67,32 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
+
+        onService = new ServiceConnection(){
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                wsService = ((WebSocketService.LocalBinder) service).getService();
+                Log.i("on connection", "service connected");
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                wsService = null;
+                Log.i("on disconnection", "service disconnected");
+            }
+
+            @Override
+            public void onBindingDied(ComponentName name) {
+                wsService = null;
+                Log.i("on binding death", "service binding dead");
+            }
+
+            @Override
+            public void onNullBinding(ComponentName name) {
+                wsService = null;
+                Log.i("on binding null", "service binding null");
+            }
+        };
 
         Intent intent = getIntent();
         if (intent != null) {
@@ -165,6 +198,7 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
                     c, "Hint "+ i + " touched.", Toast.LENGTH_LONG)
                     .show();
             hintTouched[i] = true;
+            wsService.addHint();
         });
         return hint;
     }
@@ -186,6 +220,8 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
         if (locationScene != null) {
             locationScene.resume();
         }
+
+        bindService(new Intent(this, WebSocketService.class), onService, Context.BIND_AUTO_CREATE);
     }
 
     private void checkPermission(){
@@ -241,6 +277,8 @@ public class CameraActivity extends AppCompatActivity implements LocationListene
         if(locationManager!=null){
             locationManager.removeUpdates(this); //on se désabonne, c'est this, l'écouteur que je dois retirer de l'ensemble des providers
         }
+
+        unbindService(onService);
     }
 
     @Override

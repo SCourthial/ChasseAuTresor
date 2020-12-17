@@ -4,8 +4,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.util.Log;
 import android.view.View;
 import android.widget.AbsListView;
 import android.widget.ProgressBar;
@@ -16,54 +21,81 @@ import java.util.Map;
 
 public class DashBoardActivity extends AppCompatActivity {
 
+    WebSocketService wsService;
+    ServiceConnection onService;
+
     int numberOfIndices;
 
     RecyclerView recyclerView;
 
-    List<String> s1 = new ArrayList<>();
-
     List<Integer> images = new ArrayList<>();
 
-    List<Integer> level = new ArrayList<>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        numberOfIndices =10;
+        numberOfIndices=10;
 
-        images.add(R.drawable.player_image);
-        images.add(R.drawable.player_image);
-        images.add(R.drawable.player_image);
-        images.add(R.drawable.player_image);
-        images.add(R.drawable.player_image);
+        onService = new ServiceConnection(){
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                wsService = ((WebSocketService.LocalBinder) service).getService();
+                Log.i("on connection", "service connected");
 
+                List<String> players = wsService.getPlayerNames();
+                images.clear();
+                for (int i = 0; i<players.size(); i++){
+                    images.add(R.drawable.player_image);
+                }
 
-        s1.add("Aleck");
-        s1.add("Otba");
-        s1.add("Sebastian");
-        s1.add("Samuel");
-        s1.add("Inconnu");
+                createDashboard(wsService.getPlayerNames(),wsService.getPlayerProgression(),numberOfIndices);
+            }
 
-        level.add(8);
-        level.add(7);
-        level.add(7);
-        level.add(6);
-        level.add(0);
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                wsService = null;
+                Log.i("on disconnection", "service disconnected");
+            }
 
-        createDashboard(s1,level,numberOfIndices);
+            @Override
+            public void onBindingDied(ComponentName name) {
+                wsService = null;
+                Log.i("on binding death", "service binding dead");
+            }
+
+            @Override
+            public void onNullBinding(ComponentName name) {
+                wsService = null;
+                Log.i("on binding null", "service binding null");
+            }
+        };
+
     }
 
-    public void createDashboard(List<String> playersName, List<Integer> levelProgression, int numberOfIndices){
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        bindService(new Intent(this, WebSocketService.class), onService, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        unbindService(onService);
+    }
+
+    public void createDashboard(List<String> playerNames, List<Integer> playerProgressions, int numberOfIndices){
 
         setContentView(R.layout.activity_dash_board);
 
         recyclerView = findViewById(R.id.recyclerView);
 
-         MyAdapter myAdapter = new MyAdapter(this,s1,level,images, numberOfIndices);
+        MyAdapter myAdapter = new MyAdapter(this,playerNames, playerProgressions, images, numberOfIndices);
 
         recyclerView.setAdapter(myAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
     }
 
     public void clickButtonMap(View view) {

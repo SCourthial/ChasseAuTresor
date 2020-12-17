@@ -19,21 +19,29 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        android:launchMode="singleTop">
+
+        <service
+            android:name=".WebSocketService"
+            android:enabled="true"
+            android:exported="true" >
+        </service>
+
         <activity android:name=".DashBoardActivity"></activity>
-        <activity android:name=".MenuActivity"></activity>
-
-        <meta-data
-            android:name="com.google.ar.core"
-            android:value="required" />
-
-        <activity android:name=".MapActivity">
+        <activity android:name=".MenuActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <meta-data
+            android:name="com.google.ar.core"
+            android:value="required" />
+
+        <activity android:name=".MapActivity"></activity>
 
         <activity android:name=".CameraActivity"></activity>
 
