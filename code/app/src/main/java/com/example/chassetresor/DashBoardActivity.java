@@ -51,10 +51,7 @@ public class DashBoardActivity extends AppCompatActivity {
                     images.add(R.drawable.player_image);
                 }
 
-                if (firstTime) {
-                    createDashboard(wsService.getPlayerNames(), wsService.getPlayerProgression(), numberOfIndices);
-                    firstTime = false;
-                }
+                createDashboard(wsService.getPlayerNames(), wsService.getPlayerProgression(), numberOfIndices);
             }
 
             @Override
