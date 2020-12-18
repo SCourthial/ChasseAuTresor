@@ -12,6 +12,7 @@ import android.os.Process;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.JsonObject;
 
 import org.json.simple.JSONObject;
@@ -19,6 +20,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -116,8 +118,12 @@ public class WebSocketService extends Service {
                 JSONObject leaderboard = (JSONObject) json.get("data");
 
                 leaderboard.forEach((playerName, playerProg) -> {
-                    playerNames.add((String)playerName);
-                    playerProgression.add(((Long)playerProg).intValue());
+                    if (!playerNames.contains(playerName)) {
+                        playerNames.add((String) playerName);
+                        playerProgression.add(((Long) playerProg).intValue());
+                    } else {
+                        playerProgression.set(playerNames.indexOf(playerName), ((Long) playerProg).intValue());
+                    }
                 });
 
             } catch (ParseException e) {

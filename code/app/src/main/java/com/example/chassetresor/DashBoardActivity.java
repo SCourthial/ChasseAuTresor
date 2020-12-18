@@ -24,6 +24,8 @@ public class DashBoardActivity extends AppCompatActivity {
     WebSocketService wsService;
     ServiceConnection onService;
 
+    private boolean[] hintTouched;
+
     int numberOfIndices;
     boolean firstTime = true;
 
@@ -80,6 +82,13 @@ public class DashBoardActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
 
+        Intent intent = getIntent();
+        if (intent != null) {
+            if (intent.hasExtra("HINT_TOUCHED")){ // vérifie qu'une valeur est associée à la clé “edittext”
+                hintTouched = intent.getBooleanArrayExtra("HINT_TOUCHED"); // on récupère la valeur associée à la clé
+            }
+        }
+
         bindService(new Intent(this, WebSocketService.class), onService, Context.BIND_AUTO_CREATE);
     }
 
@@ -104,6 +113,7 @@ public class DashBoardActivity extends AppCompatActivity {
 
     public void clickButtonMap(View view) {
         Intent myIntent = new Intent(DashBoardActivity.this, MapActivity.class);
+        myIntent.putExtra("HINT_TOUCHED", hintTouched);
         DashBoardActivity.this.startActivity(myIntent);
     }
 }

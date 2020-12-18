@@ -353,6 +353,7 @@ public class MapActivity extends AppCompatActivity implements LocationListener {
 
     public void clickOnDashboardButton(View view) {
         Intent myIntent = new Intent(MapActivity.this, DashBoardActivity.class);
+        myIntent.putExtra("HINT_TOUCHED", hintTouched);
         MapActivity.this.startActivity(myIntent);
     }
 }
