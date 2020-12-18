@@ -7,17 +7,22 @@ import androidx.core.app.ActivityCompat;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.FragmentManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -52,12 +57,46 @@ public class MapActivity extends AppCompatActivity implements LocationListener {
 
     private final static double MAX_RADIUS = 100; //En mètre
 
+    private Button dashboardButton;
+
+
+    WebSocketService wsService;
+    ServiceConnection onService;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
         FragmentManager fragmentManager = getFragmentManager();
         mapFragment = (MapFragment) fragmentManager.findFragmentById(R.id.map);
+
+        onService = new ServiceConnection(){
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                wsService = ((WebSocketService.LocalBinder) service).getService();
+                Log.i("on connection", "service connected");
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                wsService = null;
+                Log.i("on disconnection", "service disconnected");
+            }
+
+            @Override
+            public void onBindingDied(ComponentName name) {
+                wsService = null;
+                Log.i("on binding death", "service binding dead");
+            }
+
+            @Override
+            public void onNullBinding(ComponentName name) {
+                wsService = null;
+                Log.i("on binding null", "service binding null");
+            }
+        };
+
+        dashboardButton = findViewById(R.id.goToDashboard);
 
         indicesArray = new ArrayList<LatLng>();
         indicesArray.add(new LatLng(45.005031, 4.918539));
@@ -91,6 +130,8 @@ public class MapActivity extends AppCompatActivity implements LocationListener {
         }
 
         needMapUpdate = true;
+
+        bindService(new Intent(this, WebSocketService.class), onService, Context.BIND_AUTO_CREATE);
     }
 
     private void checkPermission() {
@@ -149,6 +190,8 @@ public class MapActivity extends AppCompatActivity implements LocationListener {
         if (locationManager != null) {
             locationManager.removeUpdates(this); //on se désabonne, c'est this, l'écouteur que je dois retirer de l'ensemble des providers
         }
+
+        unbindService(onService);
     }
 
     @SuppressWarnings("MissingPermission")
@@ -344,5 +387,11 @@ public class MapActivity extends AppCompatActivity implements LocationListener {
             return pointList.get(indexOfNearestPointToCentre);
         }
         return null;
+    }
+
+    public void clickOnDashboardButton(View view) {
+        Intent myIntent = new Intent(MapActivity.this, DashBoardActivity.class);
+        myIntent.putExtra("HINT_TOUCHED", hintTouched);
+        MapActivity.this.startActivity(myIntent);
     }
 }
