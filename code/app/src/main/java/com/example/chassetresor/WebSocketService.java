@@ -55,6 +55,22 @@ public class WebSocketService extends Service {
         playerProgression = new ArrayList<Integer>();
 
         parser = new JSONParser();
+
+        Thread pinger = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    while (true) {
+                        Log.i("ping", "ping");
+                        ping();
+                        Thread.sleep(10000);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        pinger.start();
     }
 
     public class LocalBinder extends Binder {
@@ -96,6 +112,13 @@ public class WebSocketService extends Service {
         ws.send(postData.toString());
     }
 
+    public void ping(){
+        JsonObject postData = new JsonObject();
+        postData.addProperty("id", "ping");
+
+        ws.send(postData.toString());
+    }
+
     public ArrayList<String> getPlayerNames(){
         return playerNames;
     }
@@ -118,11 +141,13 @@ public class WebSocketService extends Service {
                 JSONObject leaderboard = (JSONObject) json.get("data");
 
                 leaderboard.forEach((playerName, playerProg) -> {
-                    if (!playerNames.contains(playerName)) {
-                        playerNames.add((String) playerName);
-                        playerProgression.add(((Long) playerProg).intValue());
-                    } else {
-                        playerProgression.set(playerNames.indexOf(playerName), ((Long) playerProg).intValue());
+                    if (!playerName.equals("null")) {
+                        if (!playerNames.contains(playerName)) {
+                            playerNames.add((String) playerName);
+                            playerProgression.add(((Long) playerProg).intValue());
+                        } else {
+                            playerProgression.set(playerNames.indexOf(playerName), ((Long) playerProg).intValue());
+                        }
                     }
                 });
 
